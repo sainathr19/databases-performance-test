@@ -1,4 +1,5 @@
 pub mod local;
+pub mod mongo_db;
 use async_trait::async_trait;
 use thiserror::Error;
 use crate::models::RpmuHistoryInterval;
@@ -24,9 +25,7 @@ pub trait Database {
     
     async fn insert_many(&self, data: Vec<RpmuHistoryInterval>) -> Result<u64, DatabaseError>;
     
-    async fn fetch_one(&self, filter: Option<serde_json::Value>) -> Result<RpmuHistoryInterval, DatabaseError>;
-    
-    async fn fetch_all(&self, filter: Option<serde_json::Value>) -> Result<Vec<RpmuHistoryInterval>, DatabaseError>;
+    async fn fetch_all(&self) -> Result<(u64,Vec<RpmuHistoryInterval>), DatabaseError>;
 
     async fn fetch_latest_timestamp(&self) -> Result<u64,DatabaseError>;
 }

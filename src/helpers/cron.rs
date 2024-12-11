@@ -1,10 +1,11 @@
-use crate::{db::{local::InMemoryDatabase, mongo_db::MongoDB, Database}, models::RpmuHistoryResponse};
+use crate::{db::{local::InMemoryDatabase, mongo_db::MongoDB, postgres::{ PostgresDB}, Database}, models::RpmuHistoryResponse};
 use reqwest;
 use tokio::time;
 
 pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
     let db = InMemoryDatabase::init().await?;
     let mongo = MongoDB::init().await?;
+    let postgres = PostgresDB::init().await?;
 
     loop {
         let from = db.fetch_latest_timestamp().await?;
@@ -44,6 +45,16 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
             },
             Err(err) => {
                 println!("Error inserting into MongoDB: {:?}", err);
+                break;
+            }
+        }
+
+        match postgres.insert_many(resp.intervals.clone()).await {
+            Ok(time_taken) => {
+                println!("Inserted into PostGres in {:.2} seconds.", time_taken);
+            },
+            Err(err) => {
+                println!("Error inserting into PostGres: {:?}", err);
                 break;
             }
         }

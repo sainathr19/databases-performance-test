@@ -1,5 +1,6 @@
 pub mod local;
 pub mod mongo_db;
+pub mod postgres;
 use async_trait::async_trait;
 use thiserror::Error;
 use crate::models::RpmuHistoryInterval;

@@ -16,3 +16,7 @@ serde_json = "1.0.133"
 sqlx = { version = "0.8.2", features = ["mysql", "postgres"] }
 thiserror = "2.0.6"
 tokio = "1.42.0"
+
+[[bin]]
+name = "databases-performance-test"
+path = "src/main.rs"

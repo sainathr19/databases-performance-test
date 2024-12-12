@@ -8,8 +8,8 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/databases-performance-test
-#   EC2_HOST: ${{ secrets.EC2_HOST }}
-#   EC2_USER: ${{ secrets.EC2_USER }}
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+  EC2_USER: ${{ secrets.EC2_USER }}
 
 jobs:
   build-and-deploy:
@@ -45,3 +45,41 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+    
+    - name: Deploy to EC2 via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ${{ env.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        script: |
+            # Create .env file with all necessary environment variables
+            cat > /home/${{ env.EC2_USER }}/app.env << EOL
+            POSTGRES_URL=${{ secrets.POSTGRES_URL }}
+            MONGODB_URL=${{ secrets.MONGODB_URL }}
+            SURREALDB_URL=${{ secrets.SURREALDB_URL }}
+            RUST_LOG=info
+            DATABASE_TYPE=postgres  # Optional: if you want to specify default database
+            EOL
+      
+            # Ensure proper permissions
+            chmod 600 /home/${{ env.EC2_USER }}/app.env
+      
+            # Always pull the latest Docker image
+            docker pull ${{ env.IMAGE_NAME }}:latest
+      
+            # Stop and remove existing container
+            docker stop databases-performance-test || true
+            docker rm databases-performance-test || true
+      
+            # Run new container with environment file
+            docker run -d \
+              --name databases-performance-test \
+              --restart always \
+              -p 3000:3000 \
+              --env-file /home/${{ env.EC2_USER }}/app.env \
+              ${{ env.IMAGE_NAME }}:latest
+      
+            # Optional: Prune old docker images to save space
+            docker image prune -f
+      

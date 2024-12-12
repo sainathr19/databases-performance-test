@@ -1,0 +1,49 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  pr-checks:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        components: rustfmt, clippy
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Check code formatting
+      run: cargo fmt -- --check
+
+    - name: Run linter
+      run: cargo clippy -- -D warnings
+
+    - name: Run unit tests
+      env:
+        MONGODB_URL: ${{ secrets.MONGODB_URL }},
+        POSTGRES_URL : ${{ secrets.POSTGRES_URL}},
+        SURREALDB_URL : ${{ secrets.SURREALDB_URL}},
+      run: cargo test --verbose
+
+    - name: Build project
+      run: cargo build --verbose

@@ -12,4 +12,5 @@ RUN cargo build --release
 
 EXPOSE 3000
 
-CMD ["/app/target/release/databases-performance-test"]
+ENTRYPOINT ["/app/target/release/databases-performance-test"]
+CMD ["--default-arguments"] 

@@ -83,10 +83,12 @@ jobs:
               # Always pull the latest Docker image
               sudo docker pull ${{ env.IMAGE_NAME }}:latest
       
-              # Stop and remove existing container
-              sudo docker stop databases-performance-test || true
-              sudo docker rm databases-performance-test || true
-      
+              # Stop and remove existing container only if it exists
+              if [ "$(sudo docker ps -aq -f name=databases-performance-test)" ]; then
+                  sudo docker stop databases-performance-test
+                  sudo docker rm databases-performance-test
+              fi
+
               # Run new container with environment file
               sudo docker run -d \
                 --name databases-performance-test \

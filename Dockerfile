@@ -12,4 +12,4 @@ RUN cargo build --release
 
 EXPOSE 3000
 
-CMD ["./target/release/crypto-api"]
+CMD ["./target/release/databases-performance-api"]

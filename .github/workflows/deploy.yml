@@ -45,63 +45,70 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-    
+
     - name: Deploy to EC2 via SSH
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ env.EC2_HOST }}
-        username: ${{ env.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        script: |
-            # Ensure Docker is installed
-            if ! command -v docker &> /dev/null; then
-                echo "Docker is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y docker.io
-                sudo systemctl start docker
-                sudo systemctl enable docker
-            fi
-            
-            # Create .env file with all necessary environment variables
-            cat > /home/${{ env.EC2_USER }}/app.env << EOL
-            POSTGRES_URL=${{ secrets.POSTGRES_URL }}
-            MONGODB_URL=${{ secrets.MONGODB_URL }}
-            SURREALDB_URL=${{ secrets.SURREALDB_URL }}
-            RUST_LOG=info
-            DATABASE_TYPE=postgres  # Optional: if you want to specify default database
-            EOL
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+              # Ensure Docker is installed
+              if ! command -v docker &> /dev/null; then
+                  echo "Docker is not installed. Installing..."
+                  sudo apt-get update
+                  sudo apt-get install -y docker.io
+                  sudo systemctl start docker
+                  sudo systemctl enable docker
+              fi
       
-            # Ensure proper permissions
-            chmod 600 /home/${{ env.EC2_USER }}/app.env
+              # Add the user to the docker group to allow running docker commands without sudo
+              sudo usermod -aG docker $USER
       
-            # Always pull the latest Docker image
-            docker pull ${{ env.IMAGE_NAME }}:latest
+              # Inform user to log out and log back in to apply group changes
+              echo "User $USER added to the docker group. Please log out and log back in for this to take effect."
       
-            # Stop and remove existing container
-            docker stop databases-performance-test || true
-            docker rm databases-performance-test || true
+              # Create .env file with all necessary environment variables
+              cat > /home/${{ env.EC2_USER }}/app.env << EOL
+              POSTGRES_URL=${{ secrets.POSTGRES_URL }}
+              MONGODB_URL=${{ secrets.MONGODB_URL }}
+              SURREALDB_URL=${{ secrets.SURREALDB_URL }}
+              RUST_LOG=info
+              DATABASE_TYPE=postgres  # Optional: if you want to specify default database
+              EOL
       
-            # Run new container with environment file
-            docker run -d \
-              --name databases-performance-test \
-              --restart always \
-              -p 3000:3000 \
-              --env-file /home/${{ env.EC2_USER }}/app.env \
-              ${{ env.IMAGE_NAME }}:latest
-
-            # Wait for the container to start
-            sleep 10  # Adjust as needed for your application
-            
-            # Check if the container is running
-            if [ "$(docker ps -q -f name=databases-performance-test)" ]; then
-                echo "Container is running."
-            else
-                echo "Failed to start the container."
-                exit 1
-            fi
-
-            # Optional: Clean up environment file after use
-            rm /home/${{ env.EC2_USER }}/app.env
-            
-            # Optional: Prune old docker images to save space
-            docker image prune -f
+              # Ensure proper permissions
+              chmod 600 /home/${{ env.EC2_USER }}/app.env
+      
+              # Always pull the latest Docker image
+              docker pull ${{ env.IMAGE_NAME }}:latest
+      
+              # Stop and remove existing container
+              docker stop databases-performance-test || true
+              docker rm databases-performance-test || true
+      
+              # Run new container with environment file
+              docker run -d \
+                --name databases-performance-test \
+                --restart always \
+                -p 3000:3000 \
+                --env-file /home/${{ env.EC2_USER }}/app.env \
+                ${{ env.IMAGE_NAME }}:latest
+      
+              # Wait for the container to start
+              sleep 10  # Adjust as needed for your application
+      
+              # Check if the container is running
+              if [ "$(docker ps -q -f name=databases-performance-test)" ]; then
+                  echo "Container is running."
+              else
+                  echo "Failed to start the container."
+                  exit 1
+              fi
+      
+              # Optional: Clean up environment file after use
+              rm /home/${{ env.EC2_USER }}/app.env
+              
+              # Optional: Prune old docker images to save space
+              docker image prune -f
+      

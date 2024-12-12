@@ -23,3 +23,19 @@ impl Timer {
         }
     }
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_timer_start_stop() {
+        let mut timer = Timer::init();
+        timer.start();
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        let elapsed_time = timer.stop();
+        assert!(elapsed_time > 0.0);
+    }
+}

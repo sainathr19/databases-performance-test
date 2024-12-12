@@ -1,14 +1,14 @@
-use crate::{db::{local::InMemoryDatabase, Database}, models::{RpmuHistoryResponse}};
+use crate::{db::{local::InMemoryDatabase, mongo_db::MongoDB, Database}, models::RpmuHistoryResponse};
 use reqwest;
 use tokio::time;
-use crate::helpers::timer::Timer;
 
 pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
     let db = InMemoryDatabase::init().await?;
+    let mongo = MongoDB::init().await?;
 
     loop {
         let from = db.fetch_latest_timestamp().await?;
-        let count = 20;
+        let count = 400 ;
         let url: String = format!(
             "https://midgard.ninerealms.com/v2/history/runepool?interval=hour&count={}&from={}",
             count, from
@@ -28,17 +28,22 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
             println!("No intervals found, exiting loop.");
             break;
         }
-
-        let mut timer = Timer::init();
-        timer.start();
-        time::sleep(time::Duration::from_secs(3)).await;
         match db.insert_many(resp.intervals.clone()).await {
-            Ok(val) => {
-                let elapsed_time = timer.stop();
-                println!("Inserted {} intervals in {:.2} seconds.", val, elapsed_time);
+            Ok(time_taken) => {
+                println!("Inserted into InMemoryDatabase in {:.2} seconds.", time_taken);
             },
             Err(err) => {
-                println!("Error inserting: {:?}", err);
+                println!("Error inserting into InMemoryDatabase: {:?}", err);
+                break;
+            }
+        }
+
+        match mongo.insert_many(resp.intervals.clone()).await {
+            Ok(time_taken) => {
+                println!("Inserted into MongoDB in {:.2} seconds.", time_taken);
+            },
+            Err(err) => {
+                println!("Error inserting into MongoDB: {:?}", err);
                 break;
             }
         }

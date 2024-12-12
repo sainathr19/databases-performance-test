@@ -24,8 +24,6 @@ impl Timer {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;

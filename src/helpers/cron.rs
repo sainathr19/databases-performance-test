@@ -1,4 +1,4 @@
-use crate::{db::{local::InMemoryDatabase, mongo_db::MongoDB, postgres::{ PostgresDB}, Database}, models::RpmuHistoryResponse};
+use crate::{db::{local::InMemoryDatabase, mongo_db::MongoDB, postgres::PostgresDB,surreal_db::SurrealDB, Database}, models::RpmuHistoryResponse};
 use reqwest;
 use tokio::time;
 
@@ -6,9 +6,10 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
     let db = InMemoryDatabase::init().await?;
     let mongo = MongoDB::init().await?;
     let postgres = PostgresDB::init().await?;
+    let surrealdb = SurrealDB::init().await?;
 
     loop {
-        let from = db.fetch_latest_timestamp().await?;
+        let from = postgres.fetch_latest_timestamp().await?;
         let count = 400 ;
         let url: String = format!(
             "https://midgard.ninerealms.com/v2/history/runepool?interval=hour&count={}&from={}",
@@ -55,6 +56,16 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
             },
             Err(err) => {
                 println!("Error inserting into PostGres: {:?}", err);
+                break;
+            }
+        }
+
+        match surrealdb.insert_many(resp.intervals.clone()).await {
+            Ok(time_taken) => {
+                println!("Inserted into SurrelDB in {:.2} seconds.", time_taken);
+            },
+            Err(err) => {
+                println!("Error inserting into SurrealDB: {:?}", err);
                 break;
             }
         }

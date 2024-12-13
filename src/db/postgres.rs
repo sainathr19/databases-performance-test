@@ -66,32 +66,4 @@ impl Database for PostgresDB {
 
         Ok(timer.stop() as u64)
     }
-
-
-    async fn fetch_all(&self) -> Result<(u64,Vec<RpmuHistoryInterval>), DatabaseError> {
-        let mut timer = Timer::init();
-        timer.start();
-        let query = "SELECT count, end_time, start_time, units FROM rpmu_history";
-        let records = sqlx::query_as::<_, RpmuHistoryInterval>(query)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(DatabaseError::PostgresError)?;
-        let elapsed_time = timer.stop();
-        Ok((elapsed_time as u64,records))
-    }
-
-    async fn fetch_latest_timestamp(&self) -> Result<u64, DatabaseError> {
-        let query = "SELECT MAX(start_time) AS latest_start_time FROM rpmu_history";
-        let row: (Option<f64>,) = sqlx::query_as(query)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(DatabaseError::PostgresError)?;
-
-        match row.0 {
-            Some(latest_start_time) => {
-                Ok(latest_start_time as u64)
-            },
-            None => Err(DatabaseError::UnknownError),
-        }
-    }
 }

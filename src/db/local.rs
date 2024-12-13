@@ -49,24 +49,4 @@ impl Database for InMemoryDatabase {
         let elapsed_time = timer.stop();
         Ok(elapsed_time as u64)
     }
-
-    async fn fetch_all(&self) -> Result<(u64,Vec<RpmuHistoryInterval>), DatabaseError> {
-        let mut timer = Timer::init();
-        timer.start();
-
-        let map = self.data.lock().unwrap();
-        let intervals: Vec<RpmuHistoryInterval> = map.values().cloned().collect();
-
-        let elapsed_time = timer.stop();
-        println!("Fetch all completed in {:.2} seconds.", elapsed_time);
-        Ok((elapsed_time as u64,intervals))
-    }
-
-    async fn fetch_latest_timestamp(&self) -> Result<u64, DatabaseError> {
-        let map = self.data.lock().unwrap();
-        if let Some((latest_start_time, _)) = map.iter().max_by_key(|(&start_time, _)| start_time) {
-            return Ok(*latest_start_time);
-        }
-        Err(DatabaseError::UnknownError)
-    }
 }

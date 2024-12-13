@@ -2,6 +2,8 @@ pub mod local;
 pub mod mongo_db;
 pub mod postgres;
 pub mod surreal_db;
+pub mod rocks_db;
+
 use async_trait::async_trait;
 use thiserror::Error;
 use crate::models::RpmuHistoryInterval;
@@ -16,6 +18,12 @@ pub enum DatabaseError {
     #[error("SurrealDB error : {0}")]
     SurrealDBError(String),
 
+    #[error("LevelDB error : {0}")]
+    LevelDBError(String),
+
+    #[error("RocksDB error : {0}")]
+    RocksDBError(String),
+
     #[error("UnknownError Error")]
     UnknownError
 }
@@ -29,8 +37,4 @@ pub trait Database {
     async fn insert_one(&self, data: &RpmuHistoryInterval) -> Result<u64, DatabaseError>;
     
     async fn insert_many(&self, data: Vec<RpmuHistoryInterval>) -> Result<u64, DatabaseError>;
-    
-    async fn fetch_all(&self) -> Result<(u64,Vec<RpmuHistoryInterval>), DatabaseError>;
-
-    async fn fetch_latest_timestamp(&self) -> Result<u64,DatabaseError>;
 }

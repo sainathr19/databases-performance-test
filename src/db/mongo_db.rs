@@ -1,8 +1,5 @@
 use async_trait::async_trait;
-use futures::StreamExt;
-use mongodb::{
-    bson::{doc, Bson}, options::ClientOptions, Client, Collection
-};
+use mongodb::{options::ClientOptions, Client, Collection};
 use crate::models::RpmuHistoryInterval;
 use crate::helpers::timer::Timer;
 use super::{Database, DatabaseError};
@@ -55,60 +52,5 @@ impl Database for MongoDB {
             }
         }
     }
-    
-    async fn fetch_all(&self) -> Result<(u64, Vec<RpmuHistoryInterval>), DatabaseError> {
-        let mut timer = Timer::init();
-        timer.start();
 
-        let filter = doc! {};
-        let mut cursor = self
-            .collection
-            .find(filter)
-            .await
-            .map_err(DatabaseError::MongoDBError)?;
-    
-        let mut results = Vec::new();
-        while let Some(result) = cursor.next().await {
-            match result {
-                Ok(val) => {
-                    results.push(val);
-                },
-                Err(err) => {
-                    println!("Err : {:?}", err);
-                    return Err(DatabaseError::UnknownError);
-                }
-            }
-        }
-
-        let elapsed_time = timer.stop();
-        Ok((elapsed_time as u64, results))
-    }
-
-    async fn fetch_latest_timestamp(&self) -> Result<u64, DatabaseError> {
-        let pipeline = vec![
-            doc! { "$sort": { "end_time": -1 } },
-            doc! { "$limit": 1 },
-            doc! { "$project": { "end_time": 1, "_id": 0 } }
-        ];
-    
-        let mut cursor = self.collection
-            .aggregate(pipeline)
-            .await
-            .map_err(DatabaseError::MongoDBError)?;
-    
-        while let Some(result) = cursor.next().await {
-            let doc = result.map_err(DatabaseError::MongoDBError)?;
-            
-            if let Some(end_time_bson) = doc.get("end_time") {
-                return match end_time_bson {
-                    Bson::Double(val) => Ok(*val as u64),
-                    Bson::Int64(val) => Ok(*val as u64),
-                    Bson::Int32(val) => Ok(*val as u64),
-                    _ => Err(DatabaseError::UnknownError)
-                };
-            }
-        }
-    
-        Err(DatabaseError::UnknownError)
-    }
 }

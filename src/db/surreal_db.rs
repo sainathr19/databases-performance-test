@@ -49,34 +49,4 @@ impl Database for SurrealDB {
         let elapsed_time = timer.stop();
         Ok(elapsed_time as u64)
     }
-
-    async fn fetch_all(&self) -> Result<(u64, Vec<RpmuHistoryInterval>), DatabaseError> {
-        let mut timer = Timer::init();
-        timer.start();
-
-        let _ : Result<Vec<RpmuHistoryInterval>,DatabaseError> = self.db.select("rpmu_history").await.map_err(|e| DatabaseError::SurrealDBError(format!("Insert Error: {:?}", e)));
-        let elapsed_time = timer.stop();
-        Ok((elapsed_time as u64, Vec::new()))
-    }
-
-    async fn fetch_latest_timestamp(&self) -> Result<u64, DatabaseError> {
-        let query = r#"
-            SELECT max(start_time) AS latest_timestamp 
-            FROM rpmu_history
-        "#;
-
-        let mut result = self.db
-            .query(query)
-            .await
-            .map_err(|e| DatabaseError::SurrealDBError(format!("Timestamp Error: {:?}", e)))?;
-
-        let latest_timestamp: Option<f64> = result
-            .take(0)
-            .map_err(|_| DatabaseError::UnknownError)?;
-
-        match latest_timestamp {
-            Some(timestamp) => Ok(timestamp as u64),
-            None => Err(DatabaseError::UnknownError)
-        }
-    }
 }

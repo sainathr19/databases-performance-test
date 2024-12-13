@@ -6,11 +6,15 @@ edition = "2021"
 [dependencies]
 actix-web = "4.9.0"
 async-trait = "0.1.83"
+bincode = "1.3.3"
 chrono = "0.4.39"
 dotenv = "0.15.0"
 futures = "0.3.31"
+leveldb = "0.8.6"
+leveldb-rs = "0.0.7"
 mongodb = "3.1.0"
 reqwest = { version = "0.12.9", features = ["json"] }
+rocksdb = "0.22.0"
 serde = "1.0.216"
 serde_json = "1.0.133"
 sqlx = { version = "0.8.2", features = ["mysql", "postgres", "runtime-tokio", "tls-native-tls"] }

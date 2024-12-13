@@ -1,4 +1,4 @@
-use crate::{db::{local::InMemoryDatabase, mongo_db::MongoDB, postgres::PostgresDB, rocks_db::RocksDBWrapper, surreal_db::SurrealDB, Database}, models::RpmuHistoryResponse};
+use crate::{db::{level_db::LevelDB, local::InMemoryDatabase, mongo_db::MongoDB, postgres::PostgresDB, rocks_db::RocksDBWrapper, surreal_db::SurrealDB, Database}, models::RpmuHistoryResponse};
 use reqwest;
 use tokio::time;
 
@@ -8,6 +8,7 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
     let postgres = PostgresDB::init().await?;
     let surrealdb = SurrealDB::init().await?;
     let rocksdb = RocksDBWrapper::init().await?;
+    let level = LevelDB::init().await?;
 
     loop {
         let count = 400 ;
@@ -76,6 +77,16 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
             },
             Err(err) => {
                 println!("Error inserting into RocksDB: {:?}", err);
+                break;
+            }
+        }
+
+        match level.insert_many(resp.intervals.clone()).await {
+            Ok(time_taken) => {
+                println!("Inserted into LevelDB in {:.2} seconds.", time_taken);
+            },
+            Err(err) => {
+                println!("Error inserting into LevelDB: {:?}", err);
                 break;
             }
         }

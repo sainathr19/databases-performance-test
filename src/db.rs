@@ -3,6 +3,7 @@ pub mod mongo_db;
 pub mod postgres;
 pub mod surreal_db;
 pub mod rocks_db;
+pub mod level_db;
 
 use async_trait::async_trait;
 use thiserror::Error;

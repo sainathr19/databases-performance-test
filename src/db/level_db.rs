@@ -1,23 +1,21 @@
 use async_trait::async_trait;
-use leveldb::database::Database;
-use leveldb::options::Options;
-use leveldb::iterator::Iterable;
 use std::sync::Arc;
-use crate::models::RpmuHistoryInterval; // Assuming you have a similar model
-use crate::helpers::timer::Timer; // Assuming you have a Timer helper
-use super::{Database, DatabaseError};
+use crate::models::RpmuHistoryInterval; 
+use crate::helpers::timer::Timer;
+use crate::db::Database as DatabaseTrait; 
+use crate::db::DatabaseError;
+
+use rusty_leveldb::{AsyncDB, Options};
+
 
 pub struct LevelDB {
-    db: Arc<Database>,
+    db: Arc<AsyncDB>,
 }
 
 #[async_trait]
-impl Database for LevelDB {
+impl DatabaseTrait for LevelDB {
     async fn init() -> Result<Self, DatabaseError> {
-        let mut options = Options::new();
-        options.create_if_missing = true; // Create the database if it doesn't exist
-        let db = Database::open("path/to/your/db", options)
-            .map_err(DatabaseError::LevelDBError)?; // Handle LevelDB specific errors
+        let db = AsyncDB::new("leveldb/thorchian", Options::default()).unwrap();
         Ok(LevelDB { db: Arc::new(db) })
     }
 
@@ -25,9 +23,10 @@ impl Database for LevelDB {
         let mut timer = Timer::init();
         timer.start();
 
-        self.db.put(data.key.as_bytes(), data.value.as_bytes())
-            .map_err(DatabaseError::LevelDBError)?; // Handle LevelDB specific errors
-
+        let unique_id = data.start_time.to_string();
+        self.db.put(unique_id.as_bytes().to_owned(), serde_json::to_vec(data).map_err(|err| DatabaseError::LevelDBError(format!("Serialization Error : {}", err)))?)
+            .await
+            .map_err(|err| DatabaseError::LevelDBError(format!("Insertion Error : {}", err)))?;
         let elapsed_time = timer.stop();
         Ok(elapsed_time as u64)
     }
@@ -37,8 +36,10 @@ impl Database for LevelDB {
         timer.start();
 
         for item in data {
-            self.db.put(item.key.as_bytes(), item.value.as_bytes())
-                .map_err(DatabaseError::LevelDBError)?; // Handle LevelDB specific errors
+            let unique_id = item.start_time.to_string();
+            self.db.put(unique_id.as_bytes().to_owned(), serde_json::to_vec(&item).map_err(|err| DatabaseError::LevelDBError(format!("Serialization Error : {}", err)))?)
+                .await
+                .map_err(|err| DatabaseError::LevelDBError(format!("Insertion Error : {}", err)))?;
         }
 
         let elapsed_time = timer.stop();

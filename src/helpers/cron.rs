@@ -33,7 +33,7 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
         }
         match db.insert_many(resp.intervals.clone()).await {
             Ok(time_taken) => {
-                println!("Inserted into InMemoryDatabase in {:.2} seconds.", time_taken);
+                println!("InMemoryDatabase : {:.2} ms", time_taken);
             },
             Err(err) => {
                 println!("Error inserting into InMemoryDatabase: {:?}", err);
@@ -43,7 +43,7 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
 
         match mongo.insert_many(resp.intervals.clone()).await {
             Ok(time_taken) => {
-                println!("Inserted into MongoDB in {:.2} seconds.", time_taken);
+                println!("MongoDB : {:.2} ms", time_taken);
             },
             Err(err) => {
                 println!("Error inserting into MongoDB: {:?}", err);
@@ -53,7 +53,7 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
 
         match postgres.insert_many(resp.intervals.clone()).await {
             Ok(time_taken) => {
-                println!("Inserted into PostGres in {:.2} seconds.", time_taken);
+                println!("PostGres : {:.2} ms", time_taken);
             },
             Err(err) => {
                 println!("Error inserting into PostGres: {:?}", err);
@@ -63,7 +63,7 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
 
         match surrealdb.insert_many(resp.intervals.clone()).await {
             Ok(time_taken) => {
-                println!("Inserted into SurrelDB in {:.2} seconds.", time_taken);
+                println!("SurrelDB : {:.2} ms", time_taken);
             },
             Err(err) => {
                 println!("Error inserting into SurrealDB: {:?}", err);
@@ -73,7 +73,7 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
 
         match rocksdb.insert_many(resp.intervals.clone()).await {
             Ok(time_taken) => {
-                println!("Inserted into RocksDB in {:.2} seconds.", time_taken);
+                println!("RocksDB : {:.2} ms.", time_taken);
             },
             Err(err) => {
                 println!("Error inserting into RocksDB: {:?}", err);
@@ -83,7 +83,7 @@ pub async fn fetch_latest_data() -> Result<(), Box<dyn std::error::Error>> {
 
         match level.insert_many(resp.intervals.clone()).await {
             Ok(time_taken) => {
-                println!("Inserted into LevelDB in {:.2} seconds.", time_taken);
+                println!("Inserted into LevelDB in {:.2} ms.", time_taken);
             },
             Err(err) => {
                 println!("Error inserting into LevelDB: {:?}", err);

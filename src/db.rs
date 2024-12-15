@@ -24,9 +24,6 @@ pub enum DatabaseError {
 
     #[error("RocksDB error : {0}")]
     RocksDBError(String),
-
-    #[error("UnknownError Error")]
-    UnknownError
 }
 
 #[async_trait]

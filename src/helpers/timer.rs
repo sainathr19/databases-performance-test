@@ -17,7 +17,7 @@ impl Timer {
         if let Some(start) = self.start_time {
             let elapsed = start.elapsed();
             self.start_time = None;
-            elapsed.as_secs_f64()
+            elapsed.as_millis() as f64
         } else {
             0.0
         }
